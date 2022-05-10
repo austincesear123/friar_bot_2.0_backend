@@ -2,6 +2,7 @@ const express = require("express");
 const logger = require("morgan");
 const cors = require("cors");
 const { uploadImgUrlToS3 } = require("./s3");
+const Player = require("./models/Player");
 
 const app = express();
 
@@ -18,9 +19,15 @@ const weirdFileName =
 
 app.post("/friar_bot/upload", async (req, res) => {
   const imageLocation = await uploadImgUrlToS3(req.body.url);
-  res.json({
-    status: 200,
-    location: imageLocation.Location,
+  const playerData = {
+    url: imageLocation.Location,
+    playerName: req.body.playerName,
+  };
+  Player.create(playerData).then((player) => {
+    res.json({
+      status: 200,
+      player: player,
+    });
   });
 });
 
