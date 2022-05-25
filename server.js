@@ -1,7 +1,7 @@
 const express = require("express");
 const logger = require("morgan");
 const cors = require("cors");
-const { uploadImgUrlToS3 } = require("./s3");
+const { uploadImgUrlToS3, deleteImgFromS3 } = require("./s3");
 const Player = require("./models/Player");
 
 const app = express();
@@ -17,16 +17,19 @@ app.post("/friar_bot/upload", async (req, res) => {
     req.body.url,
     req.body.playerName
   );
-  const playerData = {
-    url: imageLocation.Location,
-    playerName: req.body.playerName,
-  };
-  Player.create(playerData).then((player) => {
-    res.json({
-      status: 200,
-      player: player,
+  if (imageLocation.Location) {
+    const playerData = {
+      url: imageLocation.Location,
+      playerName: req.body.playerName,
+      user: req.body.user,
+    };
+    Player.create(playerData).then((player) => {
+      res.json({
+        status: 200,
+        player: player,
+      });
     });
-  });
+  }
 });
 
 app.get("/friar_bot/get/:playerName", (req, res) => {
@@ -36,6 +39,29 @@ app.get("/friar_bot/get/:playerName", (req, res) => {
       playerImgs: playerImgs,
     });
   });
+});
+
+app.get("/friar_bot/id/:id", (req, res) => {
+  Player.findById(req.params.id).then((img) => {
+    res.json({
+      status: 200,
+      img: img,
+    });
+  });
+});
+
+app.delete("/friar_bot/delete", async (req, res) => {
+  try {
+    await deleteImgFromS3(req.body.playerName, req.body.key);
+    Player.deleteOne({ _id: req.body.id }).then((img) => {
+      res.json({
+        status: 200,
+        img: img,
+      });
+    });
+  } catch (err) {
+    console.log("error from back end", err);
+  }
 });
 
 app.listen(3000, () => console.log("listening on port 3000"));

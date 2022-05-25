@@ -1,5 +1,6 @@
 require("dotenv").config();
 const AWS = require("aws-sdk");
+const res = require("express/lib/response");
 const fetch = require("node-fetch");
 const { v4: uuidv4 } = require("uuid");
 
@@ -24,7 +25,23 @@ async function uploadImgUrlToS3(url, playerName) {
       ContentLength: contentLength,
       Body: response.body, // buffer
     })
-    .promise();
+    .promise()
+    .catch((error) => console.log(error));
+}
+
+async function deleteImgFromS3(playerName, key) {
+  return s3.deleteObject(
+    {
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: `${playerName}/${key}`,
+    },
+    (err) => {
+      if (err) {
+        console.log("error from s3", err);
+      }
+    }
+  );
 }
 
 exports.uploadImgUrlToS3 = uploadImgUrlToS3;
+exports.deleteImgFromS3 = deleteImgFromS3;
